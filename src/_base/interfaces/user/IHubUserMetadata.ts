@@ -17,5 +17,7 @@ export interface IHubUserMetadata {
   streak?: number;
   accesses?: number;
   avatar?: any;
+  avatar_config?: any;
+  unlocked_avatar_items?: string[];
   [key: string]: any;
 }

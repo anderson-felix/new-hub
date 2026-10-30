@@ -152,7 +152,7 @@ export const StoreView: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
             <ShoppingBag className="w-5 h-5" />
           </div>
           <div>
@@ -243,6 +243,37 @@ export const StoreView: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* Atalho Flutuante Fixo de Carrinho no Mobile */}
+      {totalCartItems > 0 && (
+        <div className="fixed bottom-4 left-4 right-4 z-40 sm:hidden">
+          <button
+            type="button"
+            onClick={() => setIsCartOpen(true)}
+            className="w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-primary text-primary-foreground shadow-2xl shadow-primary/30 border border-primary/40 backdrop-blur-xl transition-all active:scale-[0.99]"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative w-10 h-10 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0">
+                <ShoppingCart className="w-5 h-5" />
+                <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-extrabold flex items-center justify-center shadow">
+                  {totalCartItems}
+                </span>
+              </div>
+              <div className="text-left min-w-0">
+                <p className="text-sm font-bold leading-tight truncate">Ver Carrinho</p>
+                <p className="text-xs text-primary-foreground/85 truncate">
+                  {totalCartItems} {totalCartItems === 1 ? 'item selecionado' : 'itens selecionados'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-sm font-extrabold tabular-nums shrink-0">
+              <Coins className="w-4 h-4" />
+              <span>{totalCartPrice} PiCoins</span>
+            </div>
+          </button>
+        </div>
+      )}
 
       {/* Cart Drawer / Modal */}
       <Dialog open={isCartOpen} onOpenChange={setIsCartOpen}>

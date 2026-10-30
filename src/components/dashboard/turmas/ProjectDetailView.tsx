@@ -640,7 +640,7 @@ const ProjectDetailView = ({ onBack }: Props) => {
         <div className="flex items-center gap-3">
           <button
             onClick={handleBack}
-            className="p-2.5 rounded-xl border border-border/70 bg-card hover:bg-accent text-foreground transition-colors"
+            className="p-2.5 rounded-xl border border-border/70 bg-card hover:bg-accent text-foreground transition-colors shrink-0"
             title="Voltar"
           >
             <ArrowLeft className="w-5 h-5" />

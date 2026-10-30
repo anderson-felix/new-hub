@@ -140,7 +140,7 @@ const TurmaDetail = ({ turma: initialTurma, onBack }: Props) => {
       <div className="flex items-center gap-4 mb-6">
         <button
           onClick={handleBack}
-          className="p-2.5 rounded-xl border border-border/70 bg-card hover:bg-accent text-foreground transition-colors shadow-sm"
+          className="p-2.5 rounded-xl border border-border/70 bg-card hover:bg-accent text-foreground transition-colors shadow-sm shrink-0"
           title="Voltar"
         >
           <ArrowLeft className="w-5 h-5" />

@@ -112,7 +112,7 @@ const ModuleList = ({ course, onBack, onSelectModule }: Props) => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={onBack}
-          className="w-10 h-10 rounded-xl bg-accent/80 flex items-center justify-center hover:bg-accent transition-colors"
+          className="w-10 h-10 rounded-xl bg-accent/80 flex items-center justify-center hover:bg-accent transition-colors shrink-0"
         >
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </motion.button>

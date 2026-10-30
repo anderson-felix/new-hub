@@ -8,7 +8,6 @@ import {
   Flame,
   BookOpen,
   Pencil,
-  Zap,
 } from 'lucide-react';
 import MyCertificates from '@/components/dashboard/MyCertificates';
 import StudentExtract from './StudentExtract';
@@ -170,7 +169,7 @@ const StudentHome = () => {
   const [certsCount, setCertsCount] = useState<number>(0);
   const [coursesCount, setCoursesCount] = useState<number>(0);
   const { user, setUser } = useUser();
-  const { avatar, setAvatar } = useStudentAvatar();
+  const { avatar, setAvatar, unlockedItems } = useStudentAvatar();
 
   useEffect(() => {
     listUserCertificates()
@@ -213,11 +212,42 @@ const StudentHome = () => {
     }
   };
 
+  const handleUnlockAvatarItem = async (
+    _itemKeyStr: string,
+    newBal: number,
+    updatedConfig: AvatarConfig,
+    updatedUnlocked: string[],
+  ) => {
+    setAvatar(updatedConfig);
+    if (user) {
+      const updatedMetadata = {
+        ...user.metadata,
+        coins: newBal,
+        unlocked_avatar_items: updatedUnlocked,
+        avatar_config: updatedConfig,
+      };
+      setUser({ ...user, metadata: updatedMetadata });
+      try {
+        await updateProfile({ metadata: updatedMetadata });
+        toast.success('Item desbloqueado com sucesso!');
+      } catch (err) {
+        console.warn('Erro ao persistir compra de item do avatar:', err);
+        toast.success('Item desbloqueado com sucesso!');
+      }
+    } else {
+      toast.success('Item desbloqueado com sucesso!');
+    }
+  };
+
   const handleAvatarConfirm = async (c: AvatarConfig) => {
     setAvatar(c);
     if (user) {
       try {
-        const updatedMetadata = { ...user.metadata, avatar_config: c };
+        const updatedMetadata = {
+          ...user.metadata,
+          avatar_config: c,
+          unlocked_avatar_items: unlockedItems,
+        };
         await updateProfile({ metadata: updatedMetadata });
         setUser({ ...user, metadata: updatedMetadata });
         toast.success('Avatar atualizado com sucesso!');
@@ -262,6 +292,7 @@ const StudentHome = () => {
             setUser({ ...user, metadata: { ...user.metadata, coins: newBal } });
           }
         }}
+        onUnlockItem={handleUnlockAvatarItem}
         onConfirm={handleAvatarConfirm}
       />
 

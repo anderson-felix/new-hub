@@ -2410,6 +2410,7 @@ const StudentShop = ({
 }: any) => {
   const [subTab, setSubTab] = useState<SubTab>('Loja PiCode');
   const [cart, setCart] = useState<Record<string, number>>({});
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [purchasingResale, setPurchasingResale] = useState<IStoreMakerResale | null>(null);
   const [loadingOrder, setLoadingOrder] = useState(false);
@@ -2497,12 +2498,17 @@ const StudentShop = ({
           image: storeItem.picture || storeItem.image || 'https://images.unsplash.com/photo-1553406830-ef2513450d76?w=400&h=400&fit=crop',
           qty: cart[id],
           availableStock: s.quantity,
+          quantity: s.quantity,
         };
       });
   }, [realStockItems, cart]);
 
   const cartTotal = useMemo(() => {
     return cartItems.reduce((acc, it) => acc + it.price * it.qty, 0);
+  }, [cartItems]);
+
+  const totalCartQty = useMemo(() => {
+    return cartItems.reduce((acc, it) => acc + it.qty, 0);
   }, [cartItems]);
 
   // Adicionar ao carrinho
@@ -2692,16 +2698,21 @@ const StudentShop = ({
             })}
           </div>
 
-          {/* Carrinho Lateral */}
-          <aside className="lg:sticky lg:top-4 lg:self-start">
+          {/* Carrinho Lateral (Desktop) */}
+          <aside className="hidden lg:block lg:sticky lg:top-4 lg:self-start">
             <div className="glass-card rounded-2xl p-5 space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ShoppingCart className="w-4 h-4 text-primary" />
-                  <h3 className="text-sm font-bold text-foreground">Carrinho</h3>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <ShoppingCart className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-base font-bold text-foreground">Carrinho</h3>
                 </div>
                 {cartItems.length > 0 && (
-                  <button onClick={clearCart} className="text-xs text-muted-foreground hover:text-destructive transition-colors">
+                  <button
+                    onClick={clearCart}
+                    className="text-xs font-semibold text-muted-foreground hover:text-destructive transition-colors"
+                  >
                     Limpar
                   </button>
                 )}
@@ -2710,42 +2721,211 @@ const StudentShop = ({
               {cartItems.length === 0 ? (
                 <p className="text-xs text-muted-foreground py-6 text-center">Nenhum item selecionado</p>
               ) : (
-                <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
                   {cartItems.map((item: any) => (
-                    <div key={item.id} className="flex items-center justify-between text-xs p-2 rounded-xl bg-accent/30">
-                      <div className="min-w-0 flex-1 truncate pr-2">
-                        <p className="font-semibold truncate">{item.name}</p>
-                        <p className="text-[10px] text-muted-foreground tabular-nums">
-                          {item.qty} × {formatCurrency(item.price)}
+                    <div
+                      key={item.id}
+                      className="p-3 rounded-xl bg-accent/40 border border-border/40 space-y-2"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-foreground leading-snug truncate">{item.name}</p>
+                        <p className="text-xs text-muted-foreground tabular-nums mt-0.5">
+                          {formatCurrency(item.price)} un.
                         </p>
                       </div>
-                      <span className="font-bold tabular-nums">{formatCurrency(item.qty * item.price)}</span>
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-2 bg-background/70 border border-border/50 rounded-lg p-0.5">
+                          <button
+                            type="button"
+                            onClick={() => removeFromCart(item.id)}
+                            className="w-7 h-7 rounded-lg bg-accent hover:bg-accent/80 flex items-center justify-center text-sm font-bold text-foreground transition-colors"
+                          >
+                            -
+                          </button>
+                          <span className="text-xs font-bold tabular-nums px-1.5">{item.qty}</span>
+                          <button
+                            type="button"
+                            onClick={() => addToCart(item)}
+                            className="w-7 h-7 rounded-lg bg-primary text-primary-foreground hover:brightness-110 flex items-center justify-center text-sm font-bold transition-all"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <span className="text-sm font-bold text-primary tabular-nums">
+                          {formatCurrency(item.qty * item.price)}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
 
-              <div className="border-t border-border/50 pt-3 space-y-2">
-                <div className="flex justify-between text-xs">
+              <div className="border-t border-border/50 pt-3.5 space-y-2.5">
+                <div className="flex justify-between items-center text-xs sm:text-sm">
                   <span className="text-muted-foreground">Saldo do grupo:</span>
-                  <span className="font-semibold">{formatCurrency(groupBalance)}</span>
+                  <span className="font-bold text-foreground tabular-nums">{formatCurrency(groupBalance)}</span>
                 </div>
-                <div className="flex justify-between font-bold text-sm">
+                <div className="flex justify-between items-center text-base font-extrabold">
                   <span>Total:</span>
-                  <span className={cartTotal > groupBalance ? 'text-destructive' : 'text-primary'}>
+                  <span className={cn('tabular-nums', cartTotal > groupBalance ? 'text-destructive' : 'text-primary')}>
                     {formatCurrency(cartTotal)}
                   </span>
                 </div>
                 <button
                   onClick={() => setShowCheckoutModal(true)}
                   disabled={cartItems.length === 0 || cartTotal > groupBalance}
-                  className="w-full mt-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-xs hover:brightness-110 disabled:opacity-50 shadow-md transition-all"
+                  className="w-full mt-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:brightness-110 disabled:opacity-50 shadow-md transition-all"
                 >
                   Finalizar Compra / Solicitar Pedido
                 </button>
               </div>
             </div>
           </aside>
+
+          {/* Barra Flutuante Fixa de Carrinho no Mobile */}
+          <div className="fixed bottom-4 left-4 right-4 z-40 lg:hidden">
+            <button
+              type="button"
+              onClick={() => setMobileCartOpen(true)}
+              className={cn(
+                'w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl shadow-2xl border backdrop-blur-xl transition-all active:scale-[0.99]',
+                cartItems.length > 0
+                  ? 'bg-primary text-primary-foreground border-primary/40 shadow-primary/25'
+                  : 'bg-card/95 text-foreground border-border/80'
+              )}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className={cn(
+                    'relative w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+                    cartItems.length > 0 ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+                  )}
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  {totalCartQty > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-extrabold flex items-center justify-center shadow">
+                      {totalCartQty}
+                    </span>
+                  )}
+                </div>
+                <div className="text-left min-w-0">
+                  <p className="text-sm font-bold leading-tight truncate">Ver Carrinho</p>
+                  <p
+                    className={cn(
+                      'text-xs truncate',
+                      cartItems.length > 0 ? 'text-primary-foreground/85' : 'text-muted-foreground'
+                    )}
+                  >
+                    {totalCartQty === 0
+                      ? 'Nenhum item selecionado'
+                      : `${totalCartQty} ${totalCartQty === 1 ? 'item selecionado' : 'itens selecionados'}`}
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-right shrink-0">
+                <span className="text-sm font-extrabold tabular-nums block">
+                  {formatCurrency(cartTotal)}
+                </span>
+              </div>
+            </button>
+          </div>
+
+          {/* Modal do Carrinho no Mobile */}
+          <Dialog open={mobileCartOpen} onOpenChange={setMobileCartOpen}>
+            <DialogContent className="max-w-md p-5 sm:p-6 bg-card border-border/60 rounded-2xl sm:rounded-3xl">
+              <div className="flex items-center justify-between pr-6">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <ShoppingCart className="w-4 h-4" />
+                  </div>
+                  <DialogTitle className="text-base font-bold text-foreground">Carrinho</DialogTitle>
+                </div>
+                {cartItems.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearCart}
+                    className="text-xs font-semibold text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    Limpar
+                  </button>
+                )}
+              </div>
+              <DialogDescription className="sr-only">
+                Revise os itens selecionados no carrinho do grupo
+              </DialogDescription>
+
+              {cartItems.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-8 text-center">Nenhum item selecionado</p>
+              ) : (
+                <div
+                  onWheelCapture={(e) => e.stopPropagation()}
+                  onTouchMoveCapture={(e) => e.stopPropagation()}
+                  className="space-y-2.5 max-h-[45dvh] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] pr-1 my-2"
+                >
+                  {cartItems.map((item: any) => (
+                    <div
+                      key={item.id}
+                      className="p-3 rounded-xl bg-accent/40 border border-border/40 space-y-2"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-foreground leading-snug truncate">{item.name}</p>
+                        <p className="text-xs text-muted-foreground tabular-nums mt-0.5">
+                          {formatCurrency(item.price)} un.
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-2 bg-background/70 border border-border/50 rounded-lg p-0.5">
+                          <button
+                            type="button"
+                            onClick={() => removeFromCart(item.id)}
+                            className="w-7 h-7 rounded-lg bg-accent hover:bg-accent/80 flex items-center justify-center text-sm font-bold text-foreground transition-colors"
+                          >
+                            -
+                          </button>
+                          <span className="text-xs font-bold tabular-nums px-1.5">{item.qty}</span>
+                          <button
+                            type="button"
+                            onClick={() => addToCart(item)}
+                            className="w-7 h-7 rounded-lg bg-primary text-primary-foreground hover:brightness-110 flex items-center justify-center text-sm font-bold transition-all"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <span className="text-sm font-bold text-primary tabular-nums">
+                          {formatCurrency(item.qty * item.price)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="border-t border-border/50 pt-3.5 space-y-2.5">
+                <div className="flex justify-between items-center text-xs sm:text-sm">
+                  <span className="text-muted-foreground">Saldo do grupo:</span>
+                  <span className="font-bold text-foreground tabular-nums">{formatCurrency(groupBalance)}</span>
+                </div>
+                <div className="flex justify-between items-center text-base font-extrabold">
+                  <span>Total:</span>
+                  <span className={cn('tabular-nums', cartTotal > groupBalance ? 'text-destructive' : 'text-primary')}>
+                    {formatCurrency(cartTotal)}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileCartOpen(false);
+                    setShowCheckoutModal(true);
+                  }}
+                  disabled={cartItems.length === 0 || cartTotal > groupBalance}
+                  className="w-full mt-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:brightness-110 disabled:opacity-50 shadow-md transition-all"
+                >
+                  Finalizar Compra / Solicitar Pedido
+                </button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
 
@@ -3084,7 +3264,11 @@ const TeacherEditGroupModal = ({ group, open, onOpenChange, onUpdated }: any) =>
             <label className="text-xs font-semibold text-foreground mb-2 block">
               Membros ({selectedUserIds.length} selecionados, mín. 3 e máx. 8)
             </label>
-            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+            <div
+              onWheelCapture={(e) => e.stopPropagation()}
+              onTouchMoveCapture={(e) => e.stopPropagation()}
+              className="space-y-2 max-h-[300px] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] pr-1"
+            >
               {availableUsers.map((u) => {
                 const isSelected = selectedUserIds.includes(u.id);
                 return (

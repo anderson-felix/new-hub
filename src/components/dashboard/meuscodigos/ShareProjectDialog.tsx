@@ -311,7 +311,11 @@ const ShareProjectDialog = ({
             })()}
 
             {/* User list */}
-            <div className="h-56 overflow-y-auto p-1 space-y-1.5 pr-1">
+            <div
+              onWheelCapture={(e) => e.stopPropagation()}
+              onTouchMoveCapture={(e) => e.stopPropagation()}
+              className="h-56 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] p-1 space-y-1.5 pr-1"
+            >
               {loadingUsers ? (
                 <div className="flex items-center justify-center h-full py-10 gap-2 text-muted-foreground text-xs">
                   <Loader2 className="w-4 h-4 animate-spin text-primary" />

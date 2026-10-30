@@ -137,25 +137,25 @@ const TurmasList = ({
                   role="button"
                   tabIndex={0}
                   onClick={() => onSelectTurma(turma)}
-                  className="relative p-5 pl-6 cursor-pointer"
+                  className="relative p-4 sm:p-5 pl-5 sm:pl-6 cursor-pointer"
                 >
                   {/* Top: icon + code + remove button */}
-                  <div className="flex items-start justify-between mb-6">
+                  <div className="flex items-start justify-between mb-3.5">
                     <div
-                      className="flex h-10 w-10 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105"
                       style={{
                         backgroundColor: `${gradeColor}1a`,
                         color: gradeColor,
                         boxShadow: `inset 0 0 0 1px ${gradeColor}33`,
                       }}
                     >
-                      <Users className="h-4.5 w-4.5" strokeWidth={2.2} />
+                      <Users className="h-5 w-5" strokeWidth={2.2} />
                     </div>
 
                     <div className="flex items-center gap-1.5">
                       {cleanCode && (
                         <span
-                          className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums font-mono"
+                          className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums font-mono"
                           style={{
                             backgroundColor: `${gradeColor}1f`,
                             color: gradeColor,
@@ -183,14 +183,14 @@ const TurmasList = ({
                   </div>
 
                   {/* Name */}
-                  <h3 className="text-base font-bold text-foreground tracking-tight truncate mb-1">
+                  <h3 className="text-base sm:text-lg font-bold text-foreground tracking-tight truncate mb-1">
                     {turma.name}
                   </h3>
 
                   {/* Footer */}
-                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/40">
+                  <div className="flex items-center justify-between mt-3.5 pt-3 border-t border-border/40">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xs text-muted-foreground font-medium tabular-nums">
+                      <span className="text-xs sm:text-sm text-muted-foreground font-medium tabular-nums">
                         {turma.studentCount} {turma.studentCount === 1 ? 'Aluno' : 'Alunos'}
                       </span>
                       {turma.studentCount > 0 && turma.students?.length > 0 && (
@@ -198,14 +198,14 @@ const TurmasList = ({
                           {turma.students.slice(0, 3).map((s) => (
                             <div
                               key={s.id}
-                              className="flex h-5 w-5 items-center justify-center rounded-full text-[8px] font-bold text-white ring-2 ring-card"
+                              className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold text-white ring-2 ring-card"
                               style={{ backgroundColor: s.color || gradeColor }}
                             >
                               {s.initials}
                             </div>
                           ))}
                           {turma.studentCount > 3 && (
-                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[8px] font-bold text-muted-foreground ring-2 ring-card">
+                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground ring-2 ring-card">
                               +{turma.studentCount - 3}
                             </div>
                           )}
@@ -213,7 +213,7 @@ const TurmasList = ({
                       )}
                     </div>
 
-                    <ArrowUpRight className="h-4 w-4 text-muted-foreground/40 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground" />
+                    <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-muted-foreground/40 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground" />
                   </div>
                 </div>
               </motion.div>

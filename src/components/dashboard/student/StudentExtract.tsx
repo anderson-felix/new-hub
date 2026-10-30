@@ -45,7 +45,7 @@ export const StudentExtract = ({ balance = 0 }: StudentExtractProps) => {
     >
       <div className="mb-5 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10">
             <Receipt className="h-[18px] w-[18px] text-amber-500" />
           </div>
           <h2 className="text-base font-semibold text-foreground sm:text-lg">Meu Extrato</h2>

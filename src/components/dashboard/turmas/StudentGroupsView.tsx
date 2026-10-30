@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Plus, Users, ArrowUpRight, Loader2 } from 'lucide-react';
 import StudentCreateGroupDialog, { GroupMember } from './StudentCreateGroupDialog';
 import { useUser } from '@/hooks/useUser';
@@ -146,7 +146,7 @@ const StudentGroupsView = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
               <Users className="w-5 h-5 text-primary" />
             </div>
             <div>
@@ -210,64 +210,64 @@ const StudentGroupsView = () => {
                     style={{ backgroundColor: accent }}
                   />
 
-                  <div className="relative p-5">
-                    <div className="flex items-start justify-between mb-8">
+                  <div className="relative p-4 sm:p-5">
+                    <div className="flex items-start justify-between mb-3.5">
                       <div
-                        className="flex h-10 w-10 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110"
                         style={{
                           backgroundColor: `${accent}1a`,
                           boxShadow: `inset 0 0 0 1px ${accent}33`,
                         }}
                       >
-                        <Users className="h-[18px] w-[18px]" style={{ color: accent }} strokeWidth={2.2} />
+                        <Users className="h-5 w-5" style={{ color: accent }} strokeWidth={2.2} />
                       </div>
-                      <div className="flex flex-col items-end gap-1">
+                      <div className="flex flex-col items-end gap-1 min-w-0 max-w-[65%]">
                         <span
-                          className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums backdrop-blur-md"
+                          className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums backdrop-blur-md truncate max-w-full"
                           style={{
                             backgroundColor: `${accent}1f`,
                             color: accent,
                             border: `1px solid ${accent}33`,
                           }}
                         >
-                          {g.projectName}
+                          <span className="truncate">{g.projectName}</span>
                         </span>
                         {g.isPending && (
-                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
                             Pendente de aprovação
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <h3 className="text-base font-semibold text-foreground tracking-tight truncate mb-1">
+                    <h3 className="text-base sm:text-lg font-bold text-foreground tracking-tight truncate">
                       {g.name}
                     </h3>
-                    <p className="text-[11px] text-muted-foreground truncate">{g.turmaName}</p>
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate mt-0.5">{g.turmaName}</p>
 
-                    <div className="flex items-center justify-between mt-3">
+                    <div className="flex items-center justify-between mt-3.5 pt-3 border-t border-border/40">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-xs text-muted-foreground tabular-nums">
+                        <span className="text-xs sm:text-sm font-medium text-muted-foreground tabular-nums">
                           {g.membersCount} {g.membersCount === 1 ? 'Membro' : 'Membros'}
                         </span>
                         <div className="flex -space-x-1.5">
                           {g.members.slice(0, 3).map(m => (
                             <div
                               key={m.id}
-                              className="flex h-5 w-5 items-center justify-center rounded-full text-[8px] font-bold text-white ring-2 ring-card"
+                              className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold text-white ring-2 ring-card"
                               style={{ backgroundColor: m.color }}
                             >
                               {m.initials}
                             </div>
                           ))}
                           {g.membersCount > 3 && (
-                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[8px] font-bold text-muted-foreground ring-2 ring-card">
+                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground ring-2 ring-card">
                               +{g.membersCount - 3}
                             </div>
                           )}
                         </div>
                       </div>
-                      <ArrowUpRight className="h-4 w-4 text-muted-foreground/40 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground" />
+                      <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-muted-foreground/40 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground" />
                     </div>
                   </div>
                 </motion.button>
@@ -297,7 +297,6 @@ const StudentGroupsView = () => {
         })) as any}
         onCreate={handleCreate}
       />
-
     </>
   );
 };

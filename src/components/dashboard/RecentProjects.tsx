@@ -69,7 +69,7 @@ const RecentProjects = () => {
     >
       <div className="mb-5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
             <FolderOpen className="text-primary" style={{ width: 18, height: 18 }} />
           </div>
           <h2 className="text-[15px] font-semibold text-foreground tracking-tight">Meus Projetos Recentes</h2>

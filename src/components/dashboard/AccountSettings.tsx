@@ -126,7 +126,7 @@ const AccountSettings = ({ isDark, onToggleTheme }: Props) => {
     >
       <div className="mb-5 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
             <Settings className="h-[18px] w-[18px] text-primary" />
           </div>
           <h2 className="text-base font-semibold text-foreground sm:text-lg">Configurações</h2>

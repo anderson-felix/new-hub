@@ -119,9 +119,9 @@ const CreateGroupDialog = ({ open, onOpenChange, availableStudents, onCreate }: 
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="w-[calc(100vw-1rem)] sm:w-full max-w-lg p-0 overflow-hidden bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl sm:rounded-3xl shadow-2xl gap-0">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:w-full max-w-lg max-h-[90dvh] flex flex-col p-0 overflow-hidden bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl sm:rounded-3xl shadow-2xl gap-0">
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 sm:px-6 pt-5 pb-4 border-b border-border/40">
+        <div className="shrink-0 flex items-center gap-3 px-4 sm:px-6 pt-5 pb-4 border-b border-border/40">
           <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center ring-1 ring-emerald-500/20 flex-shrink-0">
             <CheckCircle2 className="w-5 h-5 text-emerald-500" />
           </div>
@@ -131,7 +131,7 @@ const CreateGroupDialog = ({ open, onOpenChange, availableStudents, onCreate }: 
           </div>
         </div>
 
-        <div className="px-4 sm:px-6 py-4 space-y-5 max-h-[65vh] sm:max-h-[70vh] overflow-y-auto">
+        <div className="flex-1 min-h-0 px-4 sm:px-6 py-4 space-y-5 overflow-y-auto overscroll-contain touch-pan-y">
           {/* Group name */}
           <div className="space-y-2">
             <label className="text-xs font-semibold text-foreground/80 flex items-center gap-1.5">
@@ -205,7 +205,7 @@ const CreateGroupDialog = ({ open, onOpenChange, availableStudents, onCreate }: 
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
                         <input
-                          autoFocus
+
                           value={search}
                           onChange={e => setSearch(e.target.value)}
                           placeholder="Buscar aluno..."
@@ -213,7 +213,11 @@ const CreateGroupDialog = ({ open, onOpenChange, availableStudents, onCreate }: 
                         />
                       </div>
                     </div>
-                    <div className="max-h-56 overflow-y-auto p-1">
+                    <div
+                      onWheelCapture={(e) => e.stopPropagation()}
+                      onTouchMoveCapture={(e) => e.stopPropagation()}
+                      className="max-h-52 sm:max-h-60 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] p-1"
+                    >
                       {filteredStudents.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-6">
                           <Users className="w-5 h-5 text-muted-foreground/50 mb-1.5" />
@@ -389,7 +393,7 @@ const CreateGroupDialog = ({ open, onOpenChange, availableStudents, onCreate }: 
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-4 sm:px-6 py-3.5 border-t border-border/40 bg-accent/20">
+        <div className="shrink-0 flex items-center justify-end gap-2 px-4 sm:px-6 py-3.5 border-t border-border/40 bg-accent/20">
           <button
             type="button"
             onClick={() => handleClose(false)}

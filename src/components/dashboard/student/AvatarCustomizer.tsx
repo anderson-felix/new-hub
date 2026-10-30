@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Shuffle, ChevronDown, Lock, Coins } from 'lucide-react';
 import {
@@ -19,6 +19,8 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
+import { formatCoin } from '@/_base/utils';
+import { useStudentAvatar } from '@/hooks/useStudentAvatar';
 
 /**
  * DiceBear "Avataaars" — clássico cartoon estilo Bitmoji.
@@ -186,7 +188,7 @@ const GRAPHIC_OPTIONS = [
   { value: 'bear', label: 'Urso' },
 ];
 
-type AvatarShopCategory =
+export type AvatarShopCategory =
   | 'top'
   | 'eyes'
   | 'eyebrows'
@@ -196,13 +198,13 @@ type AvatarShopCategory =
   | 'clothing'
   | 'clothingGraphic';
 
-type ShopItem = {
+export type ShopItem = {
   category: AvatarShopCategory;
   value: string;
   price: number;
 };
 
-const SHOP_ITEMS: ShopItem[] = [
+export const SHOP_ITEMS: ShopItem[] = [
   { category: 'top', value: 'froBand', price: 120 },
   { category: 'top', value: 'miaWallace', price: 140 },
   { category: 'top', value: 'straightAndStrand', price: 160 },
@@ -219,12 +221,21 @@ const SHOP_ITEMS: ShopItem[] = [
   { category: 'clothingGraphic', value: 'skull', price: 95 },
 ];
 
-const itemKey = (category: AvatarShopCategory, value: string) => `${category}:${value}`;
+export const itemKey = (category: AvatarShopCategory, value: string) => `${category}:${value}`;
 
-const getShopItem = (category: AvatarShopCategory, value: string) =>
+export const getShopItem = (category: AvatarShopCategory, value: string) =>
   SHOP_ITEMS.find((item) => item.category === category && item.value === value);
 
-const formatPrice = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`;
+export const getEquippedPaidItemKeys = (cfg?: Partial<AvatarConfig> | null): string[] => {
+  if (!cfg) return [];
+  const keys: string[] = [];
+  SHOP_ITEMS.forEach((item) => {
+    if (cfg[item.category] === item.value) {
+      keys.push(itemKey(item.category, item.value));
+    }
+  });
+  return keys;
+};
 
 const isUnlocked = (unlockedItems: Set<string>, category: AvatarShopCategory, value: string) => {
   const shopItem = getShopItem(category, value);
@@ -352,6 +363,7 @@ const ThumbnailPicker = ({
   configKey,
   unlockedItems,
 }: ThumbnailPickerProps) => {
+  const [open, setOpen] = useState(false);
   const current = options.find((o) => o.value === value);
   const focus = FOCUS_BY_KEY[configKey] ?? 'full';
   const focusStyle = FOCUS_STYLE[focus];
@@ -370,7 +382,7 @@ const ThumbnailPicker = ({
       <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </p>
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <button
             type="button"
@@ -385,7 +397,7 @@ const ThumbnailPicker = ({
           sideOffset={8}
           onWheelCapture={(event) => event.stopPropagation()}
           onTouchMoveCapture={(event) => event.stopPropagation()}
-          className="z-[60] w-[380px] rounded-2xl border-border/40 bg-popover/95 p-3 shadow-2xl backdrop-blur-xl"
+          className="z-[60] w-[min(380px,calc(100vw-2rem))] rounded-2xl border-border/40 bg-popover/95 p-3 shadow-2xl backdrop-blur-xl"
         >
           <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             {label}
@@ -399,7 +411,14 @@ const ThumbnailPicker = ({
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => (locked && shopItem ? onLockedSelect(shopItem, opt.label) : onChange(opt.value))}
+                  onClick={() => {
+                    setOpen(false);
+                    if (locked && shopItem) {
+                      onLockedSelect(shopItem, opt.label);
+                    } else {
+                      onChange(opt.value);
+                    }
+                  }}
                   className={cn(
                     'group relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-2 transition-all',
                     active
@@ -430,7 +449,7 @@ const ThumbnailPicker = ({
                   {locked && shopItem && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">
                       <Coins className="h-2.5 w-2.5" />
-                      {formatPrice(shopItem.price)}
+                      {formatCoin(shopItem.price)}
                     </span>
                   )}
                 </button>
@@ -442,7 +461,6 @@ const ThumbnailPicker = ({
     </div>
   );
 };
-
 
 interface SwatchPickerProps {
   label: string;
@@ -467,6 +485,7 @@ const SwatchPicker = ({ label, value, swatches, onChange }: SwatchPickerProps) =
           return (
             <button
               key={v}
+              type="button"
               onClick={() => onChange(v)}
               aria-label={v}
               className={cn(
@@ -545,15 +564,41 @@ interface AvatarCustomizerProps {
   initial?: AvatarConfig;
   balance: number;
   onBalanceChange: (balance: number) => void;
+  onUnlockItem?: (
+    itemKeyStr: string,
+    newBalance: number,
+    updatedConfig: AvatarConfig,
+    updatedUnlocked: string[],
+  ) => void;
   onConfirm: (config: AvatarConfig) => void;
 }
 
 const randomFrom = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
-const AvatarCustomizer = ({ open, onOpenChange, initial, balance, onBalanceChange, onConfirm }: AvatarCustomizerProps) => {
+const AvatarCustomizer = ({
+  open,
+  onOpenChange,
+  initial,
+  balance,
+  onBalanceChange,
+  onUnlockItem,
+  onConfirm,
+}: AvatarCustomizerProps) => {
+  const { unlockedItems: unlockedList, unlockAvatarItem, setAvatar } = useStudentAvatar();
   const [config, setConfig] = useState<AvatarConfig>(initial ?? DEFAULT_AVATAR);
-  const [unlockedItems, setUnlockedItems] = useState<Set<string>>(() => new Set());
   const [pendingPurchase, setPendingPurchase] = useState<{ item: ShopItem; label: string } | null>(null);
+
+  useEffect(() => {
+    if (open && initial) {
+      setConfig(initial);
+    }
+  }, [open, initial]);
+
+  const unlockedItems = useMemo(() => {
+    const set = new Set<string>(unlockedList);
+    getEquippedPaidItemKeys(initial).forEach((k) => set.add(k));
+    return set;
+  }, [unlockedList, initial]);
 
   const update = <K extends keyof AvatarConfig>(key: K, value: AvatarConfig[K]) =>
     setConfig((c) => ({ ...c, [key]: value }));
@@ -564,9 +609,21 @@ const AvatarCustomizer = ({ open, onOpenChange, initial, balance, onBalanceChang
     if (!pendingPurchase || balance < pendingPurchase.item.price) return;
 
     const { item } = pendingPurchase;
-    setUnlockedItems((items) => new Set(items).add(itemKey(item.category, item.value)));
-    setConfig((current) => ({ ...current, [item.category]: item.value }));
-    onBalanceChange(balance - item.price);
+    const key = itemKey(item.category, item.value);
+    const newBalance = balance - item.price;
+
+    const updatedConfig: AvatarConfig = {
+      ...config,
+      [item.category]: item.value,
+      ...(item.category === 'accessories' ? { accessoriesProbability: 100 } : {}),
+      ...(item.category === 'facialHair' ? { facialHairProbability: 100 } : {}),
+    };
+
+    const updatedUnlocked = unlockAvatarItem(key);
+    setConfig(updatedConfig);
+    setAvatar(updatedConfig);
+    onBalanceChange(newBalance);
+    onUnlockItem?.(key, newBalance, updatedConfig, updatedUnlocked);
     setPendingPurchase(null);
   };
 
@@ -596,273 +653,292 @@ const AvatarCustomizer = ({ open, onOpenChange, initial, balance, onBalanceChang
 
   return (
     <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl rounded-3xl border-border/40 bg-background/95 p-0 backdrop-blur-xl">
-        <DialogTitle className="sr-only">Customizar Avatar</DialogTitle>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="w-[calc(100vw-1.5rem)] max-w-3xl max-h-[90dvh] flex flex-col overflow-hidden rounded-3xl border-border/40 bg-background/95 p-0 backdrop-blur-xl gap-0">
+          <DialogTitle className="sr-only">Customizar Avatar</DialogTitle>
 
-        {/* Header */}
-        <div className="flex items-center justify-between p-5">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-              <Sparkles className="h-5 w-5 text-primary" />
+          {/* Header */}
+          <div className="shrink-0 border-b border-border/40 px-4 py-3.5 sm:p-5 pr-11 sm:pr-12 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-foreground truncate">Customizar Avatar</p>
+                <p className="text-[11px] text-muted-foreground truncate">Estilo Avataaars</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-bold text-foreground">Customizar Avatar</p>
-              <p className="text-[11px] text-muted-foreground">Estilo Avataaars</p>
-            </div>
-          </div>
-          <button
-            onClick={randomize}
-            className="mr-8 flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
-          >
-            <Shuffle className="h-3.5 w-3.5" />
-            Aleatório
-          </button>
-          <div className="mr-8 hidden items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 sm:flex">
-            <Coins className="h-3.5 w-3.5" />
-            {formatPrice(balance)}
-          </div>
-        </div>
 
-        {/* Body */}
-        <div className="grid grid-cols-1 gap-6 px-6 pb-2 md:grid-cols-[220px,1fr] md:items-start">
-          {/* Avatar preview */}
-          <div className="flex flex-col items-center gap-3">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={JSON.stringify(config)}
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.2 }}
-                className="relative"
+            <div className="flex items-center gap-2">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 sm:px-3 sm:py-1.5 text-[11px] sm:text-xs font-bold text-amber-600 dark:text-amber-400">
+                <Coins className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                <span className="tabular-nums">{formatCoin(balance)}</span>
+              </div>
+              <button
+                type="button"
+                onClick={randomize}
+                className="flex h-8 sm:h-9 items-center gap-1.5 rounded-full border border-border bg-card px-2.5 sm:px-3 text-xs font-semibold text-foreground transition-colors hover:bg-muted shrink-0"
               >
-                <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-primary via-primary/40 to-amber-400 opacity-60 blur-lg" />
-                <div
-                  className="relative h-44 w-44 overflow-hidden rounded-full ring-4 ring-background shadow-xl"
-                  style={{
-                    background:
-                      config.backgroundColor === 'transparent'
-                        ? 'transparent'
-                        : `#${config.backgroundColor}`,
-                  }}
+                <Shuffle className="h-3.5 w-3.5" />
+                <span>Aleatório</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="flex-1 min-h-0 flex flex-col md:grid md:grid-cols-[220px,1fr] gap-4 md:gap-6 px-4 sm:px-6 py-4 overflow-hidden">
+            {/* Avatar preview */}
+            <div className="flex flex-col items-center justify-center shrink-0">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={JSON.stringify(config)}
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.2 }}
+                  className="relative"
                 >
-                  <AvatarPreview config={config} />
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-
-          {/* Controls */}
-          <div className="max-h-[55vh] space-y-3 overflow-y-auto pr-1">
-            {/* Cores principais */}
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-              <SwatchPicker
-                label="Cor da pele"
-                value={config.skinColor}
-                swatches={SKIN_COLORS}
-                onChange={(v) => update('skinColor', v)}
-              />
-              <SwatchPicker
-                label="Cor do cabelo"
-                value={config.hairColor}
-                swatches={HAIR_COLORS}
-                onChange={(v) => update('hairColor', v)}
-              />
+                  <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-primary via-primary/40 to-amber-400 opacity-60 blur-md md:blur-lg" />
+                  <div
+                    className="relative h-28 w-28 sm:h-36 sm:w-36 md:h-44 md:w-44 shrink-0 overflow-hidden rounded-full ring-4 ring-background shadow-xl"
+                    style={{
+                      background:
+                        config.backgroundColor === 'transparent'
+                          ? 'transparent'
+                          : `#${config.backgroundColor}`,
+                    }}
+                  >
+                    <AvatarPreview config={config} />
+                  </div>
+                </motion.div>
+              </AnimatePresence>
             </div>
 
-            {/* Rosto */}
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-              <ThumbnailPicker
-                label="Cabelo / Topo"
-                value={config.top}
-                options={TOP_OPTIONS}
-                onChange={(v) => update('top', v)}
-                onLockedSelect={requestPurchase}
-                baseConfig={config}
-                configKey="top"
-                unlockedItems={unlockedItems}
-              />
-              <ThumbnailPicker
-                label="Olhos"
-                value={config.eyes}
-                options={EYES_OPTIONS}
-                onChange={(v) => update('eyes', v)}
-                onLockedSelect={requestPurchase}
-                baseConfig={config}
-                configKey="eyes"
-                unlockedItems={unlockedItems}
-              />
-              <ThumbnailPicker
-                label="Sobrancelhas"
-                value={config.eyebrows}
-                options={EYEBROWS_OPTIONS}
-                onChange={(v) => update('eyebrows', v)}
-                onLockedSelect={requestPurchase}
-                baseConfig={config}
-                configKey="eyebrows"
-                unlockedItems={unlockedItems}
-              />
-              <ThumbnailPicker
-                label="Boca"
-                value={config.mouth}
-                options={MOUTH_OPTIONS}
-                onChange={(v) => update('mouth', v)}
-                onLockedSelect={requestPurchase}
-                baseConfig={config}
-                configKey="mouth"
-                unlockedItems={unlockedItems}
-              />
-            </div>
-
-            {/* Roupa */}
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-              <ThumbnailPicker
-                label="Roupa"
-                value={config.clothing}
-                options={CLOTHING_OPTIONS}
-                onChange={(v) => update('clothing', v)}
-                onLockedSelect={requestPurchase}
-                baseConfig={config}
-                configKey="clothing"
-                unlockedItems={unlockedItems}
-              />
-              <SwatchPicker
-                label="Cor da roupa"
-                value={config.clothesColor}
-                swatches={CLOTHES_COLORS}
-                onChange={(v) => update('clothesColor', v)}
-              />
-            </div>
-
-            {config.clothing === 'graphicShirt' && (
-              <ThumbnailPicker
-                label="Estampa da camisa"
-                value={config.clothingGraphic}
-                options={GRAPHIC_OPTIONS}
-                onChange={(v) => update('clothingGraphic', v)}
-                onLockedSelect={requestPurchase}
-                baseConfig={config}
-                configKey="clothingGraphic"
-                unlockedItems={unlockedItems}
-              />
-            )}
-
-            {/* Toggles */}
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-              <ToggleWithVariant
-                label="Óculos"
-                enabled={config.accessoriesProbability === 100}
-                onToggle={(v) => update('accessoriesProbability', v ? 100 : 0)}
-                value={config.accessories}
-                options={ACCESSORIES_OPTIONS}
-                onChange={(v) => update('accessories', v)}
-                onLockedSelect={requestPurchase}
-                baseConfig={{ ...config, accessoriesProbability: 100 }}
-                configKey="accessories"
-                unlockedItems={unlockedItems}
-              />
-              <ToggleWithVariant
-                label="Barba / Bigode"
-                enabled={config.facialHairProbability === 100}
-                onToggle={(v) => update('facialHairProbability', v ? 100 : 0)}
-                value={config.facialHair}
-                options={FACIAL_HAIR_OPTIONS}
-                onChange={(v) => update('facialHair', v)}
-                onLockedSelect={requestPurchase}
-                baseConfig={{ ...config, facialHairProbability: 100 }}
-                configKey="facialHair"
-                unlockedItems={unlockedItems}
-              />
-            </div>
-
-            {config.facialHairProbability === 100 && (
-              <SwatchPicker
-                label="Cor da barba"
-                value={config.facialHairColor}
-                swatches={HAIR_COLORS}
-                onChange={(v) => update('facialHairColor', v)}
-              />
-            )}
-
-            <SwatchPicker
-              label="Cor de fundo"
-              value={config.backgroundColor}
-              swatches={BG_COLORS}
-              onChange={(v) => update('backgroundColor', v)}
-            />
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-center gap-3 p-6">
-          <button
-            onClick={() => onOpenChange(false)}
-            className="rounded-full border border-border bg-background px-8 py-2.5 text-sm font-semibold text-foreground transition-all hover:bg-muted"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={() => {
-              onConfirm(config);
-              onOpenChange(false);
-            }}
-            className="rounded-full bg-foreground px-8 py-2.5 text-sm font-semibold text-background transition-all hover:scale-[1.02] hover:opacity-90"
-          >
-            Confirmar
-          </button>
-        </div>
-      </DialogContent>
-    </Dialog>
-    <AlertDialog open={Boolean(pendingPurchase)} onOpenChange={(isOpen) => !isOpen && setPendingPurchase(null)}>
-      <AlertDialogContent className="rounded-3xl border-border/40 bg-background/95 backdrop-blur-xl">
-        <AlertDialogHeader>
-          <AlertDialogTitle>Comprar item?</AlertDialogTitle>
-          <AlertDialogDescription>
-            {pendingPurchase
-              ? `${pendingPurchase.label} custa ${formatPrice(pendingPurchase.item.price)}. Seu saldo atual é ${formatPrice(balance)}.`
-              : ''}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-
-        {pendingPurchase && (() => {
-          const cat = pendingPurchase.item.category as keyof AvatarConfig;
-          const previewConfig = { ...config, [cat]: pendingPurchase.item.value } as AvatarConfig;
-          return (
-            <div className="flex items-center gap-4 rounded-2xl border border-border/40 bg-gradient-to-br from-primary/5 via-muted/30 to-amber-500/5 p-4">
-              <div className="relative h-32 w-32 shrink-0 overflow-hidden rounded-full bg-background ring-2 ring-primary/20 shadow-lg">
-                <AvatarPreview config={previewConfig} />
+            {/* Controls */}
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-3 pr-1 pb-2">
+              {/* Cores principais */}
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                <SwatchPicker
+                  label="Cor da pele"
+                  value={config.skinColor}
+                  swatches={SKIN_COLORS}
+                  onChange={(v) => update('skinColor', v)}
+                />
+                <SwatchPicker
+                  label="Cor do cabelo"
+                  value={config.hairColor}
+                  swatches={HAIR_COLORS}
+                  onChange={(v) => update('hairColor', v)}
+                />
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                  Pré-visualização
-                </p>
-                <p className="mt-0.5 truncate text-base font-semibold text-foreground">
-                  {pendingPurchase.label}
-                </p>
-                <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 ring-1 ring-amber-500/20">
-                  <Coins className="h-3.5 w-3.5 text-amber-500" />
-                  <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
-                    {formatPrice(pendingPurchase.item.price)}
-                  </span>
-                </div>
+
+              {/* Rosto */}
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                <ThumbnailPicker
+                  label="Cabelo / Topo"
+                  value={config.top}
+                  options={TOP_OPTIONS}
+                  onChange={(v) => update('top', v)}
+                  onLockedSelect={requestPurchase}
+                  baseConfig={config}
+                  configKey="top"
+                  unlockedItems={unlockedItems}
+                />
+                <ThumbnailPicker
+                  label="Olhos"
+                  value={config.eyes}
+                  options={EYES_OPTIONS}
+                  onChange={(v) => update('eyes', v)}
+                  onLockedSelect={requestPurchase}
+                  baseConfig={config}
+                  configKey="eyes"
+                  unlockedItems={unlockedItems}
+                />
+                <ThumbnailPicker
+                  label="Sobrancelhas"
+                  value={config.eyebrows}
+                  options={EYEBROWS_OPTIONS}
+                  onChange={(v) => update('eyebrows', v)}
+                  onLockedSelect={requestPurchase}
+                  baseConfig={config}
+                  configKey="eyebrows"
+                  unlockedItems={unlockedItems}
+                />
+                <ThumbnailPicker
+                  label="Boca"
+                  value={config.mouth}
+                  options={MOUTH_OPTIONS}
+                  onChange={(v) => update('mouth', v)}
+                  onLockedSelect={requestPurchase}
+                  baseConfig={config}
+                  configKey="mouth"
+                  unlockedItems={unlockedItems}
+                />
+              </div>
+
+              {/* Roupa */}
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                <ThumbnailPicker
+                  label="Roupa"
+                  value={config.clothing}
+                  options={CLOTHING_OPTIONS}
+                  onChange={(v) => update('clothing', v)}
+                  onLockedSelect={requestPurchase}
+                  baseConfig={config}
+                  configKey="clothing"
+                  unlockedItems={unlockedItems}
+                />
+                <SwatchPicker
+                  label="Cor da roupa"
+                  value={config.clothesColor}
+                  swatches={CLOTHES_COLORS}
+                  onChange={(v) => update('clothesColor', v)}
+                />
+              </div>
+
+              {config.clothing === 'graphicShirt' && (
+                <ThumbnailPicker
+                  label="Estampa da camisa"
+                  value={config.clothingGraphic}
+                  options={GRAPHIC_OPTIONS}
+                  onChange={(v) => update('clothingGraphic', v)}
+                  onLockedSelect={requestPurchase}
+                  baseConfig={config}
+                  configKey="clothingGraphic"
+                  unlockedItems={unlockedItems}
+                />
+              )}
+
+              {/* Toggles */}
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                <ToggleWithVariant
+                  label="Óculos"
+                  enabled={config.accessoriesProbability === 100}
+                  onToggle={(v) => update('accessoriesProbability', v ? 100 : 0)}
+                  value={config.accessories}
+                  options={ACCESSORIES_OPTIONS}
+                  onChange={(v) => update('accessories', v)}
+                  onLockedSelect={requestPurchase}
+                  baseConfig={{ ...config, accessoriesProbability: 100 }}
+                  configKey="accessories"
+                  unlockedItems={unlockedItems}
+                />
+                <ToggleWithVariant
+                  label="Barba / Bigode"
+                  enabled={config.facialHairProbability === 100}
+                  onToggle={(v) => update('facialHairProbability', v ? 100 : 0)}
+                  value={config.facialHair}
+                  options={FACIAL_HAIR_OPTIONS}
+                  onChange={(v) => update('facialHair', v)}
+                  onLockedSelect={requestPurchase}
+                  baseConfig={{ ...config, facialHairProbability: 100 }}
+                  configKey="facialHair"
+                  unlockedItems={unlockedItems}
+                />
+              </div>
+
+              {config.facialHairProbability === 100 && (
+                <SwatchPicker
+                  label="Cor da barba"
+                  value={config.facialHairColor}
+                  swatches={HAIR_COLORS}
+                  onChange={(v) => update('facialHairColor', v)}
+                />
+              )}
+
+              <SwatchPicker
+                label="Cor de fundo"
+                value={config.backgroundColor}
+                swatches={BG_COLORS}
+                onChange={(v) => update('backgroundColor', v)}
+              />
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="shrink-0 border-t border-border/40 bg-background/95 px-4 py-3.5 sm:p-5 flex items-center justify-end sm:justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="flex-1 sm:flex-initial rounded-full border border-border bg-background px-6 sm:px-8 py-2.5 text-sm font-semibold text-foreground transition-all hover:bg-muted"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onConfirm(config);
+                onOpenChange(false);
+              }}
+              className="flex-1 sm:flex-initial rounded-full bg-foreground px-6 sm:px-8 py-2.5 text-sm font-semibold text-background transition-all hover:scale-[1.02] hover:opacity-90"
+            >
+              Confirmar
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={Boolean(pendingPurchase)} onOpenChange={(isOpen) => !isOpen && setPendingPurchase(null)}>
+        <AlertDialogContent className="rounded-3xl border-border/40 bg-background/95 backdrop-blur-xl">
+          <AlertDialogHeader>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <AlertDialogTitle>Comprar item?</AlertDialogTitle>
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 px-3 py-1 text-xs font-bold text-amber-600 dark:text-amber-400">
+                <Coins className="h-4 w-4 text-amber-500 shrink-0" />
+                <span>Seu saldo:</span>
+                <span className="tabular-nums">{formatCoin(balance)}</span>
               </div>
             </div>
-          );
-        })()}
+            <AlertDialogDescription>
+              {pendingPurchase
+                ? `Desbloqueie "${pendingPurchase.label}" por ${formatCoin(pendingPurchase.item.price)} para personalizar seu avatar.`
+                : 'Desbloqueie este item exclusivo para personalizar seu avatar.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
 
-        {!pendingHasEnoughBalance && (
-          <div className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
-            Saldo insuficiente para desbloquear este item.
-          </div>
-        )}
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction disabled={!pendingHasEnoughBalance} onClick={confirmPurchase}>
-            Desbloquear
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          {pendingPurchase && (() => {
+            const cat = pendingPurchase.item.category as keyof AvatarConfig;
+            const previewConfig = {
+              ...config,
+              [cat]: pendingPurchase.item.value,
+              ...(cat === 'accessories' ? { accessoriesProbability: 100 } : {}),
+              ...(cat === 'facialHair' ? { facialHairProbability: 100 } : {}),
+            } as AvatarConfig;
+            return (
+              <div className="flex items-center gap-4 rounded-2xl border border-border/40 bg-gradient-to-br from-primary/5 via-muted/30 to-amber-500/5 p-4">
+                <div className="relative h-28 w-28 sm:h-32 sm:w-32 shrink-0 overflow-hidden rounded-full bg-background ring-2 ring-primary/20 shadow-lg">
+                  <AvatarPreview config={previewConfig} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Pré-visualização
+                  </p>
+                  <p className="mt-0.5 truncate text-base font-semibold text-foreground">
+                    {pendingPurchase.label}
+                  </p>
+                  <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 ring-1 ring-amber-500/20">
+                    <Coins className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                    <span className="text-sm font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+                      {formatCoin(pendingPurchase.item.price)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {!pendingHasEnoughBalance && (
+            <div className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
+              Saldo insuficiente para desbloquear este item.
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction disabled={!pendingHasEnoughBalance} onClick={confirmPurchase}>
+              Desbloquear
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
